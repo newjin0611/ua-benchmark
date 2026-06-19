@@ -1,0 +1,72 @@
+#server:
+#  port: 8083
+#  tomcat:
+#    threads:
+#      max: 200
+#      min-spare: 50
+#    accept-count: 500
+#    max-connections: 5000
+
+# aws
+#server:
+#  port: 8083
+#  tomcat:
+#    threads:
+#      max: 500
+#      min-spare: 100
+#    accept-count: 1000
+#    max-connections: 10000
+
+# 이사님
+#server:
+#  port: 8083
+#  tomcat:
+#    threads:
+#      max: 64
+#      min-spare: 20
+#    accept-count: 20000
+#    max-connections: 10000
+
+# 15000 TPS
+#server:
+#  port: 8801
+#  tomcat:
+#    max-connections: 20480
+#    threads:
+#      max: 2048
+#      min-spare: 2048
+#    accept-count: 20480
+#    keep-alive-timeout: -1
+#    connection-timeout: 65000
+
+
+# Virtual Threads
+server:
+  port: 8801
+  tomcat:
+    max-connections: 20480
+    accept-count: 20480
+    keep-alive-timeout: -1
+    connection-timeout: 65000
+
+spring:
+  application:
+    name: ua-benchmark
+  # Virtual Threads
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Yauaa 캐시 설정 (yauaa-cache 프로파일 전용)
+ua:
+  yauaa:
+    cache-size: 10000   # 최근 N개 UA 결과 캐싱, 필요에 따라 조정
