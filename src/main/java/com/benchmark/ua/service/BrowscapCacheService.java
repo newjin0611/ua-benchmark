@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
@@ -24,23 +24,30 @@ public class BrowscapCacheService {
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final ReentrantLock lock = new ReentrantLock();
 
-    // Caffeine 캐시: 파싱 결과를 UA 문자열 기준으로 저장
-    // 빈 HashMap 같은 자료구조를 하나 만드는 것이라 사실상 즉시 완료
+    private final AtomicLong successCount = new AtomicLong(0);
+    private final AtomicLong failCount    = new AtomicLong(0);
+
+    public long getSuccessCount() { return successCount.get(); }
+    public long getFailCount()    { return failCount.get(); }
+
     private final Cache<String, Capabilities> uaCache = Caffeine.newBuilder()
-        .maximumSize(50_000) // 한 번 파싱한 결과를 최대 5만 개까지 메모리에 저장.
-//        .expireAfterAccess(1, TimeUnit.DAYS) // 마지막 접근 후 1일 지나면 삭제. 즉, 같은 UA가 오면 캐시에서 꺼내서 리턴 → 빠름      .recordStats()
-//        .recordStats()  // ← 통계 기록 활성화
+        .maximumSize(50_000)
         .build();
 
     public void parse(String userAgent) {
         if (!initialized.get()) ensureInitialized();
-        // 캐시에 있으면 꺼내고, 없으면 파싱 후 자동 저장
-//        long start = System.nanoTime();
-        Capabilities c = uaCache.get(userAgent, parser::parse);
-//        long elapsed = (System.nanoTime() - start) / 1_000;
 
-//        log.info("[browscap] {}µs | browser[{} {}] os[{}] device[{}] ua[{}]",
-//                 elapsed, c.getBrowser(), c.getBrowserMajorVersion(), c.getPlatform(), c.getDeviceType(), userAgent);
+        try {
+            Capabilities c = uaCache.get(userAgent, parser::parse);
+            if (c == null) {
+                failCount.incrementAndGet();
+            } else {
+                successCount.incrementAndGet();
+            }
+        } catch (Exception e) {
+            failCount.incrementAndGet();
+            log.warn("[browscap-cache] parse 실패: {}", e.getMessage());
+        }
     }
 
     private void ensureInitialized() {

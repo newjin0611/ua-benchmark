@@ -37,6 +37,30 @@ public class BenchmarkController {
         return ResponseEntity.badRequest().body("활성화된 프로파일 없음");
     }
 
+    @GetMapping("/stats")
+    public ResponseEntity<String> stats() {
+        if (uaParserService != null)
+            return ResponseEntity.ok(String.format("ua-parser | success=%d fail=%d",
+                uaParserService.getSuccessCount(), uaParserService.getFailCount()));
+        if (browscapService != null)
+            return ResponseEntity.ok(String.format("browscap | success=%d fail=%d",
+                browscapService.getSuccessCount(), browscapService.getFailCount()));
+        if (browscapCacheService != null)
+            return ResponseEntity.ok(String.format("browscap-cache | success=%d fail=%d",
+                browscapCacheService.getSuccessCount(), browscapCacheService.getFailCount()));
+        if (yauaaSingletonService != null)
+            return ResponseEntity.ok(String.format("yauaa-singleton | success=%d fail=%d",
+                yauaaSingletonService.getSuccessCount(), yauaaSingletonService.getFailCount()));
+        if (yauaaCachedService != null)
+            return ResponseEntity.ok(String.format("yauaa-cache | success=%d fail=%d",
+                yauaaCachedService.getSuccessCount(), yauaaCachedService.getFailCount()));
+        if (yauaaNoCacheService != null)
+            return ResponseEntity.ok(String.format("yauaa-no-cache | success=%d fail=%d",
+                yauaaNoCacheService.getSuccessCount(), yauaaNoCacheService.getFailCount()));
+
+        return ResponseEntity.badRequest().body("활성화된 프로파일 없음");
+    }
+
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("OK");

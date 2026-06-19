@@ -7,6 +7,7 @@ import ua_parser.Client;
 import ua_parser.Parser;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
@@ -18,15 +19,26 @@ public class UaParserService {
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final ReentrantLock lock = new ReentrantLock();
 
+    private final AtomicLong successCount = new AtomicLong(0);
+    private final AtomicLong failCount    = new AtomicLong(0);
+
+    public long getSuccessCount() { return successCount.get(); }
+    public long getFailCount()    { return failCount.get(); }
+
     public void parse(String userAgent) {
         if (!initialized.get()) ensureInitialized();
 
-//        long start = System.nanoTime();
-        Client c = parser.parse(userAgent);
-//        long elapsed = (System.nanoTime() - start) / 1_000;
-
-//        System.out.printf("[ua-parser] %dµs | browser[%s %s] os[%s] device[%s] ua[%s]%n",
-//                elapsed, c.userAgent.family, c.userAgent.major, c.os.family, c.device.family, userAgent);
+        try {
+            Client c = parser.parse(userAgent);
+            if (c == null || c.userAgent == null) {
+                failCount.incrementAndGet();
+            } else {
+                successCount.incrementAndGet();
+            }
+        } catch (Exception e) {
+            failCount.incrementAndGet();
+            log.warn("[ua-parser] parse 실패: {}", e.getMessage());
+        }
     }
 
     private void ensureInitialized() {
