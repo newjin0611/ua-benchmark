@@ -27,11 +27,14 @@ public class BrowscapCacheService {
     private final AtomicLong successCount = new AtomicLong(0);
     private final AtomicLong failCount    = new AtomicLong(0);
 
-    public long getSuccessCount() { return successCount.get(); }
-    public long getFailCount()    { return failCount.get(); }
+    public long getSuccessCount()   { return successCount.get(); }
+    public long getFailCount()      { return failCount.get(); }
+    public long getCacheHitCount()  { return (long) uaCache.stats().hitCount(); }
+    public long getCacheMissCount() { return (long) uaCache.stats().missCount(); }
 
     private final Cache<String, Capabilities> uaCache = Caffeine.newBuilder()
         .maximumSize(50_000)
+        .recordStats()
         .build();
 
     public void parse(String userAgent) {
