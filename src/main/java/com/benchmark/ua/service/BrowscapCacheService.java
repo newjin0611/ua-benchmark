@@ -20,6 +20,9 @@ import java.util.concurrent.locks.ReentrantLock;
 @Profile("browscap-cache")
 public class BrowscapCacheService {
 
+    /** UA 뒤에 붙는 광고식별자 구분자. 이 토큰부터 끝까지(madid, mappid 등)는 파싱 대상이 아니다. */
+    private static final String MADID_TOKEN = ";madid=";
+
     private volatile UserAgentParser parser;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final ReentrantLock lock = new ReentrantLock();
@@ -37,11 +40,25 @@ public class BrowscapCacheService {
         .recordStats()
         .build();
 
+    /**
+     * UA 끝에 붙은 ";madid=...;mappid=..." 구간을 잘라낸다.
+     * 정규식(replaceAll/replaceFirst) 대신 indexOf + substring 사용 → 고부하 시 CPU 오버헤드 최소화.
+     * madid가 없으면 입력을 그대로 반환(불필요한 객체 생성 없음).
+     */
+    private static String stripMadid(String userAgent) {
+        if (userAgent == null) return null;
+        int idx = userAgent.indexOf(MADID_TOKEN);
+        return (idx >= 0) ? userAgent.substring(0, idx) : userAgent;
+    }
+
     public void parse(String userAgent) {
         if (!initialized.get()) ensureInitialized();
 
+        // ✅ 파싱/캐싱 전에 madid 제거 → 캐시 키가 실제 UA로 정규화되어 캐시 히트가 정상 동작
+        String normalizedUa = stripMadid(userAgent);
+
         try {
-            Capabilities c = uaCache.get(userAgent, parser::parse);
+            Capabilities c = uaCache.get(normalizedUa, parser::parse);
             if (c == null) {
                 failCount.incrementAndGet();
             } else {

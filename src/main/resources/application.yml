@@ -70,3 +70,9 @@ management:
 ua:
   yauaa:
     cache-size: 10000   # 최근 N개 UA 결과 캐싱, 필요에 따라 조정
+
+
+logging:
+  level:
+    com.benchmark.ua: DEBUG
+    root: INFO
